@@ -118,4 +118,5 @@ MIDDLEWARE_CLASSES = (
 
 必须  python manage.py migrate
 '''
+
 ```
