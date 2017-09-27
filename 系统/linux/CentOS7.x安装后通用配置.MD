@@ -3,3 +3,6 @@
 
 ## 设置主机名
 `hostname set-hostname xxxx-name`
+
+## ssh-keygen
+`yum install -y openssh`
