@@ -6,4 +6,5 @@ export PROMPT_COMMAND='history 1|tail -1|sed "s/^[ ]\+[0-9]\+  //"|sed "s/$/\"}/
 
 
 # 简洁版本
- export PS1='\u@\[\033[01;31m\]\H\[\033[01;34m\] \w \$\[\033[00m\] '
+export PS1='\u@\[\033[01;31m\]\H\[\033[01;34m\] \w \n\$\[\033[00m\] '
+
