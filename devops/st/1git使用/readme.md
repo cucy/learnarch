@@ -13,19 +13,19 @@
 ```shell
 [root@n1 ~]# docker run -d --name=gogs -p 10022:22 -p 3000:3000 --link mysql:mysql  -v /var/gogs:/data gogs/gogs
 ```
-
-`参考文档 https://github.com/gogits/gogs/tree/master/docker 启动时修改 Database Type , Domain , Application URL`
+- `域名`必须写外网能访问的地址,`端口`必须是外网能访问的端口,`应用 URL`写外网可以访问的URL,**否则不能正常登陆克隆**
+- `参考文档 https://github.com/gogits/gogs/tree/master/docker 启动时修改 Database Type , Domain , Application URL`
 
 ## 练习一 Git仓库管理
 
 ### 1.从远程仓库拉取代码
 
 ```shell
-[root@n1 ~]# git clone https://github.com/microservices-kata/petstore-account-service.git
-[root@n1 ~]# cd petstore-account-service
+[root@n1 ~]# git clone https://github.com/cucy/learnarch.git
+[root@n1 ~]# cd learnarch
 [root@n1 petstore-account-service]# git remote -v
-origin	https://github.com/microservices-kata/petstore-account-service.git (fetch)
-origin	https://github.com/microservices-kata/petstore-account-service.git (push)
+origin	https://github.com/cucy/learnarch.git (fetch)
+origin	https://github.com/cucy/learnarch.git (push)
 ```
 
 ### 2.创建新的远程仓库 
@@ -37,11 +37,17 @@ Gogs界⾯操作：注册⽤户，登录，创建代码仓库，拷⻉仓库地�
 ```shell
 [root@n1 petstore-account-service]# git remote add zrdtest http://10.76.249.131:3000/zrd/zrdtest.git
 [root@n1 petstore-account-service]# git remote -v
-origin	https://github.com/microservices-kata/petstore-account-service.git (fetch)
-origin	https://github.com/microservices-kata/petstore-account-service.git (push)
+origin	https://github.com/cucy/learnarch.git (fetch)
+origin	https://github.com/cucy/learnarch.git (push)
 zrdtest	http://10.76.249.131:3000/zrd/zrdtest.git (fetch)
 zrdtest	http://10.76.249.131:3000/zrd/zrdtest.git (push)
 [root@n1 petstore-account-service]# git push -u zrdtest origin/master 
+
+# 删除远程仓库地址
+bash-4.3# git remote  remove zrdtest
+bash-4.3# git remote -v
+origin	https://github.com/cucy/learnarch.git (fetch)
+origin	https://github.com/cucy/learnarch.git (push)
 ```
 
 ## 练习二 代码提交和回滚
@@ -102,7 +108,16 @@ git branch rel_1.0	# 创建分支
 git branch -v
 git branch -v -r
 git checkout rel_1.0	# 切换到分支
+
+# 简洁版创建分支并切换
+git checkout -b rel_1.1
+git branch -v
 ```
+* 将当前分支推送到`remote`端
+    - 1、远程已有`remote_branch`分支并且已经关联本地分支`local_branch`且本地已经切换到`local_branch`: 
+        `git push`
+    - 2、远程已有`remote_branch`分支但未关联本地分支`local_branch`且本地已经切换到`local_branch`: ` git push -u origin/remote_branch`
+    - 3、远程没有有`remote_branch`分支,且本地已经切换到`local_branch`: `git push origin local_branch:remote_branch`
 
 ### 2.继续修改并提交到开发分支
 
@@ -220,4 +235,3 @@ git log 		# 找到要修改提交的前一个提交号
 git rebase -i 	<提交号>
 git push --force
 ```
-
