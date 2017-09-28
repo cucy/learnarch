@@ -96,12 +96,31 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 
 将密钥内容输入到界面上，完成解锁 .
+- `不要选择任何插件配置,直接点击右上角的关闭按钮，自己手动选择插件，没有配置插件源国内网络下载慢且可能失败`
 
-### 7.插件初始化
+### 7. 配置国内源
+`不配置下载插件100%失败`
+
+```shell
+http://mirrors.jenkins-ci.org/status.html
+
+# 使用清华大学镜像包含所有插件
+https://mirrors.tuna.tsinghua.edu.cn/jenkins/
+
+# 1
+jenkis-->系统管理-->管理插件-->高级-->代理设置-->点击高级 --》Test URL -->输入以下url -提交
+https://mirrors.tuna.tsinghua.edu.cn/jenkins/
+# 2
+升级站点== 》  填入以下URL ==》提交
+https://mirrors.tuna.tsinghua.edu.cn/jenkins/updates/update-center.json 
+# 3
+点击 立即获取
+```
+
+### 8.插件初始化
 
 解锁后进入`Customize Jenkins `页面
 
 `````shell
-Git 和 Pipeline  选择这两个插件
+Git 和 Pipeline   SSH plugin  等插件
 `````
-
