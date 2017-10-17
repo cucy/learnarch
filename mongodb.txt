@@ -1,0 +1,2095 @@
+mongodb
+关系数据库功能强大 遵循sql标准，并且卓越稳定
+单实例数据库 ---读写分离数据库---水平拆分数据库    随业务的不断增长
+性能不错 简单      分摊负载保持性能  相对容易     水平拆分保持性能  拆分不易  扩容不易
+
+海量存储下高并发读写
+高效存储
+容易扩展
+
+mongodb是高性能，高效 容易扩展的开源的nosql数据库
+设计理念：
+简单、简洁、自治
+功能强大 
+管理简单
+
+mongodb设计为文档类型数据库 ：
+模式自由灵活
+易扩展
+高性能
+
+设计目标：折衷和平衡
+分布式存储的扩展能力
+海量存储保证高性能的查询
+
+mongodb设计的局限：
+舍弃了联接查询(join)
+复杂的多行事务
+模式自由(滥用时是缺点)  文档存在集合中，对管理和开发都是噩梦
+
+mongodb应用领域： 对联接查询 多行事务要求不高
+网站数据 
+分布式场景  
+缓存层 ：数据放在内存中，提高效率   把mogodb当做缓存层
+
+
+
+
+#################################################################
+mysql和mongodb对比：新建  迁移  删除  
+mysql： 
+字段以及字段长度
+100万行数据  修改用户表的字符长度  前100万行符合需求  表结构固定  模式固定  为了修改一行，需要同时修改字符串的长度
+
+mysql修改字段属性 表结构  会影响所有之前以及之后的记录
+
+增加字段需要新建表   把旧的数据迁移到新表中  io 操作   把旧的表删除 
+
+mongodb：新建  迁移  删除  
+100万行数据：
+需要字段的长度更长   模式是自由灵活的  对长度没有限制 ，只会影响自己本身，对之前和之后的行都不会产生影响 
+添加新字段的时候，之前的和之后不会有影响，不会因为一行导致性能提升
+文档设计：灵活、自由，只影响本身
+#################################################################
+mongodb安装和管理：
+在生产中安装和部署mongodb
+下载mongodb程序
+确定程序存放目录
+驱动数据库数据目录
+启动数据库
+
+创建数据：
+for (i = 1; i <= 10000; i++) db.mycoll.insert({age:(i%100), name:"magedu_user"+i, address:i+", Some Road, Zhengzhou, Henan", country:"China", course:"cousre"+"(i%12)"})
+
+mongodb.org/downloads#production---linux  ---version 
+
+安装/usr/local/mongodb/bin
+[root@node1 local]# tar xf mongodb-linux-x86_64-rhel62-3.4.2.tgz 
+[root@node1 local]# cd mongodb-linux-x86_64-rhel62-3.4.2
+[root@node1 mongodb-linux-x86_64-rhel62-3.4.2]# ls
+bin  GNU-AGPL-3.0  MPL-2  README  THIRD-PARTY-NOTICES
+[root@node1 mongodb-linux-x86_64-rhel62-3.4.2]# rm -rf GNU-AGPL-3.0  MPL-2  README  THIRD-PARTY-NOTICES
+[root@node1 mongodb-linux-x86_64-rhel62-3.4.2]# ls
+bin
+14个命令和工具：
+[root@node1 local]# ln -sv mongodb-linux-x86_64-rhel62-3.4.2 mongodb
+[root@node1 local]# cd bin/
+[root@node1 bin]# ls
+bsondump  mongod     mongoexport  mongoimport  mongoperf    mongorestore  mongostat
+mongo     mongodump  mongofiles   mongooplog   mongoreplay  mongos        mongotop
+[root@node1 bin]# 
+
+
+启动mongodb服务：
+/usr/local/mongodb/bin
+[root@node1 mongodb]# ls
+bin
+[root@node1 mongodb]# mkdir data
+[root@node1 mongodb]# ls
+bin  data
+[root@node1 mongodb]# cd bin/
+[root@node1 bin]# ./mongod --journal --storageEngine=mmapv1 --dbpath=/usr/local/mongodb/data
+
+预分配的时候使用zeroes 填充  
+终端退出或者ctrl+c  导致终端 
+#################################################################
+
+启动和关闭数据库
+
+运行在后台  ：
+[root@node1 bin]# ./mongod --journal --storageEngine=mmapv1 --dbpath=/usr/local/mongodb/data --fork --logpath=/usr/local/mongodb/data/mongodb1.log 
+about to fork child process, waiting until server is ready for connections.
+forked process: 31762
+child process started successfully, parent exiting
+
+[root@node1 tools]# ps aux|grep 31762
+root     31762  0.7  1.7 621904 67156 ?        Sl   08:23   0:00 ./mongod --journal --storageEngine=mmapv1 --dbpath=/usr/local/mongodb/data --fork --logpath=/usr/local/mongodb/data/mongodb1.log
+root     31777  0.0  0.0 103252   832 pts/0    S+   08:24   0:00 grep 31762
+
+#################################################################
+
+
+客户端访问mongodb：
+将别名和PATH路径都添加到 profile中
+
+[root@node1 ~]# vim ~/.bash_profile 
+export PATH=$PATH:/usr/local/mongodb/bin
+alias mongo='/usr/local/mongodb/bin/mongo --host 10.137.198.83'
+
+
+[root@node1 ~]# alias mongo='/usr/local/mongodb/bin/mongo'
+[root@node1 ~]# mongo
+[root@node1 ~]# mongo --port 27018
+
+[root@node1 mongodb]# ls
+bin  data
+[root@node1 mongodb]# cd bin/
+[root@node1 bin]# ./mongo
+> exit  退出
+#################################################################
+单实例数据库如何通过配置文件启动：
+
+
+命令行加后台运行的方式运行 服务器down机了   参数忘了 数据目录忘了在哪里   找到也需要验证   运维效率不高  
+将启动的参数保存到配置文件中，参数的启动和关闭 
+
+通过配置文件启动数据库：
+[root@node1 mongodb]# ls
+bin  data
+[root@node1 mongodb]# mkdir etc
+[root@node1 mongodb]# cd etc
+[root@node1 etc]# vim mongodb1.cnf   键值对的方式出现   添加端口对实例的时候区分出来
+journal=true
+storageEngine=mmapv1 
+dbpath=/usr/local/mongodb/data 
+fork=true
+port=27017
+logpath=/usr/local/mongodb/data/mongodb1.log
+
+配置文件启动：
+[root@node1 mongodb]# ./bin/mongod -f etc/mongodb1.cnf 
+about to fork child process, waiting until server is ready for connections.
+forked process: 31828
+child process started successfully, parent exiting
+
+#################################################################
+
+关闭mongodb ：
+发出关闭的命令  并不能关闭运行的实例 ，关闭的时候好找数据目录  默认的找/data/db
+[root@node1 mongodb]# ./bin/mongod --shutdown
+There doesn't seem to be a server running with dbpath: /data/db
+
+服务器关闭时要找的文件 ：mongod.lock
+[root@node1 data]# cat mongod.lock
+31762
+
+关闭的时候后要指定数据目录 要查找目录下的mongod.lock文件，得到进程号，根据进程号再kill 进程
+[root@node1 mongodb]# ./bin/mongod --shutdown --dbpath=/usr/local/mongodb/data
+killing process with pid: 31762
+
+关闭的时候指定配置文件：
+
+[root@node1 mongodb]# ./bin/mongod -f etc/mongodb1.cnf --shutdown
+
+
+#################################################################
+如何在一个服务器中启动多实例：
+单台资源很充分的情况下，充分利用服务器资源
+
+[root@node1 mongodb]# pwd
+/usr/local/mongodb
+[root@node1 mongodb]# ls
+bin  data  etc
+[root@node1 mongodb]# cd etc/
+[root@node1 etc]# ls
+mongodb1.cnf
+[root@node1 mongodb]# ls
+bin  data  etc
+[root@node1 mongodb]# mkdir data2    创建数据目录 
+[root@node1 etc]# cp mongodb1.cnf mongodb2.cnf 
+[root@node1 etc]# vim mongodb2.cnf    修改端口  数据目录  日志文件也需要指定
+journal=true
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data2
+fork=true
+port=27018
+logpath=/usr/local/mongodb/data2/mongodb2.log
+~
+启动
+[root@node1 mongodb]# ./bin/mongod -f etc/mongodb2.cnf 
+about to fork child process, waiting until server is ready for connections.
+forked process: 31868
+child process started successfully, parent exiting
+验证：
+[root@node1 mongodb]# ps aux|grep mongodb
+root     31868  0.8  1.7 621908 69312 ?        Sl   08:42   0:00 ./bin/mongod -f etc/mongodb2.cnf
+root     31883  0.0  0.0 103252   832 pts/0    S+   08:42   0:00 grep mongodb
+[root@node1 mongodb]# netstat -tnlp|grep mongo
+tcp        0      0 0.0.0.0:27018               0.0.0.0:*                   LISTEN      31868/./bin/mongod 
+
+两个实例都在运行：
+[root@node1 mongodb]# netstat -tnlp|grep mongo
+tcp        0      0 0.0.0.0:27017               0.0.0.0:*                   LISTEN      31888/./bin/mongod  
+tcp        0      0 0.0.0.0:27018               0.0.0.0:*                   LISTEN      31868/./bin/mongod  
+[root@node1 mongodb]# ps aux|grep mongodb
+root     31868  0.6  1.7 621908 69436 ?        Sl   08:42   0:00 ./bin/mongod -f etc/mongodb2.cnf
+root     31888  1.8  1.7 620884 66900 ?        Sl   08:43   0:00 ./bin/mongod -f etc/mongodb1.cnf
+
+
+#################################################################
+
+编写脚本来启动和关闭数据库：配置文件将参数保存起来 
+编写脚本 提高效率
+管理mongodb的启动和重启 
+[root@node1 mongodb]# pwd
+/usr/local/mongodb
+[root@node1 mongodb]# ls
+bin  data  data2  etc  mongodb_service
+[root@node1 mongodb]# cat mongodb_service 
+#!/bin/bash
+instance=$1
+action=$2
+
+case "$action" in
+ 'start')
+   /usr/local/mongodb/bin/mongod -f /usr/local/mongodb/etc/"$instance".cnf;;
+ 'stop')
+   /usr/local/mongodb/bin/mongod -f /usr/local/mongodb/etc/"$instance".cnf --shutdown;;
+ 'restart')
+   /usr/local/mongodb/bin/mongod -f /usr/local/mongodb/etc/"$instance".cnf --shutdown
+   /usr/local/mongodb/bin/mongod -f /usr/local/mongodb/etc/"$instance".cnf;;
+
+esac
+
+
+[root@node1 mongodb]# chmod 755 mongodb_service
+
+[root@node1 mongodb]# ./mongodb_service mongodb1 stop
+[root@node1 mongodb]# ./mongodb_service mongodb2 stop
+
+[root@node1 mongodb]# ./mongodb_service mongodb2 restart
+加入服务，随开关机
+#################################################################
+逻辑和物理存储结构
+
+物理存储的结构设计以及优势特点
+
+逻辑结构：
+文档是mongodb的核心概念
+他是mongodb逻辑存储的最小基本单元
+集合：多个文档组成集合
+数据库：多个集合组成数据库
+
+
+定义别名使用 mongo命令
+alias mongo='/usr/local/mongodb/bin/mongo'
+
+[root@node1 mongodb]# mongo
+MongoDB shell version v3.4.2
+
+查看当前实例下有哪些数据库以及存储的大小  show dbs  ==show databases; 
+由一个或者多个数据库组成的：
+> show dbs
+admin  0.078GB
+local  0.078GB
+
+打开数据库以及 查看库中那些表：
+由一个或者多个表组成：
+
+一个或者多个数据库组成一个实例
+数据库有一个或者多个集合组成
+一个集合有一个或者多个文档组成
+> use admin
+switched to db admin
+> show tables;
+system.indexes
+system.version
+
+关系型数据库中表是由记录组成；
+表(文档)是由记录(文档)组成，mongodb叫文档  文档组成的是表，叫做集合show collections == show tables；
+> db.system.version.find().limit(5)
+{ "_id" : "featureCompatibilityVersion", "version" : "3.4" }  一条记录
+键:值 
+多个键值对之间使用逗号分隔  
+
+> show collections;
+system.indexes
+system.version
+
+#################################################################
+
+数据存储结构：
+命名空间文件ns
+数据文件（0,1,2……）
+集合存储都是以数据库命名的 
+数据库的命名遵循操作系统的命名规则
+-rw------- 1 root root  64M Feb  4 08:58 local.0  第一个0分配的数据文件64M 第二个1是128M 第三个2是256M  大小是上一个的2倍
+-rw------- 1 root root  16M Feb  4 08:58 local.ns  命名空间文件：存储了数据和预分配的磁盘空间，分配和正在使用的
+
+数据很小的时候不浪费
+正常很快，通过预分配的方式，很好的避免 数据剧增 造成性能下降  预分配空间 换取性能的提升
+
+
+#################################################################
+日志存储结构：
+mongodb的日志文件：
+启动的时候记录 进程版本号 数据目录 启动是否需要修复recover   journal是重做日志文件  服务器关闭的信息 
+初始化的时候的最终 连接打开
+异常  排除问题的时候使用
+
+四种日志：
+1、系统日志文件logpath 
+2、journal日志文件  是redo日志   崩溃恢复的保障
+3、oplog复制操作日志文件  主从的时候才会有
+4、慢查询日志
+[root@node1 mongodb]# ./bin/mongod --help |grep profile 
+  --slowms arg (=100)                   value of slow for profile and console   大于多少毫秒是慢查询 生产中是200毫秒
+  --profile arg                         0=off 1=slow, 2=all
+
+[root@node1 etc]# vim mongodb1.cnf 
+journal=true
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data
+fork=true
+port=27017
+logpath=/usr/local/mongodb/data/mongodb1.log
+profile=1
+slowms=1
+
+
+> use admin
+switched to db admin
+> show collections
+system.indexes
+system.version
+> db.system.indexes.find()
+{ "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "admin.system.version" }
+{ "v" : 2, "key" : { "version" : 1 }, "name" : "incompatible_with_version_32", "ns" : "admin.system.version" }
+> 
+#################################################################
+
+mongodb备份和恢复管理：
+mysql 迁移到 mongodb的工作：
+如何copy一个数据库  一个集合 
+ 
+mysql的表迁移到mongodb ： 导入和导出
+
+相同的格式才能导入和导出  mysql导出csv格式的数据，让mongodb能够导入
+mysql> select *  from user into outfile '/tmp/users_mysql.csv' fields terminated by ",";
+Query OK, 5 rows affected (0.00 sec)
+
+[root@node1 tmp]# head users_mysql.csv 
+localhost,root,,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,,,,,0,0,0,0
+node1,root,,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,,,,,0,0,0,0
+127.0.0.1,root,,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,,,,,0,0,0,0
+localhost,,,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,,,,,0,0,0,0
+node1,,,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,,,,,0,0,0,0
+
+[root@node1 tmp]# wc -l users_mysql.csv 
+5 users_mysql.csv
+
+mongodb导入mysql
+[root@node1 bin]# pwd
+/usr/local/mongodb/bin
+[root@node1 bin]# ./mongoimport --help
+[root@node1 bin]# ./mongoimport -d douxp -c users_mysql -f guid,gssid,charguid,charname --file users_mysql.csv --type csv
+-c  指定集合
+-d 指定数据库
+-f 指定有哪些字段
+--file 导入的文件名在哪里 
+--type 指定数据的类型  不指定默认是json的格式  
+
+查看行数：db.users_mysql.count()
+
+
+#################################################################
+
+导出mongodb的整个集合 ：
+[root@node1 bin]# ./mongoexport --help
+json是可读的 是文档格式  mongodb直接识别和执行的
+[root@node1 bin]# ./mongoexport -d michael -c user3 -o ./users3.json
+
+导入到其他的数据库里面：默认是json  就不需要要--type了
+[root@node1 bin]# ./mongoimport -d test -c users3_mysql --file users3.json 
+就创建了test的数据库，并且多了集合users3_mysql 
+show dbs
+use test
+show colletions
+db.users3_mysql.count()
+
+#################################################################
+
+导出集合中的想要的部分，按照条件进行导出：
+db.users3.find().count()
+大于5000的文档导出
+db.users3.find({"uid":{"$gt":5000}}).count()
+
+[root@node1 bin]# ./mongoexport -d michael -c user3 -q '{"uid":{"$gt":5000}}' -o ./users3.json
+
+
+#################################################################
+导入和导出用于不同的数据库之间的迁移：用于数据库的备份和恢复
+备份和恢复：
+备份：
+逻辑备份：mongodump
+物理备份：冷备：停止数据库  简单的cp
+
+恢复：mongorestore
+
+
+[root@node1 bin]# mkdir /usr/local/backup
+[root@node1 bin]# cd /usr/local/backup
+[root@node1 backup]# ls
+
+[root@node1 bin]# pwd
+/usr/local/mongodb/bin
+[root@node1 bin]# ./mongodump --help  
+[root@node1 bin]# ./mongodump -d local -o /usr/local/backup/
+2017-02-04T10:46:36.777+0800    writing local.startup_log to 
+2017-02-04T10:46:36.779+0800    done dumping local.startup_log (7 documents)
+[root@node1 bin]# cd -
+/usr/local/backup
+[root@node1 backup]# ls
+local
+[root@node1 backup]# cd local/
+[root@node1 local]# ls
+startup_log.bson  startup_log.metadata.json
+
+bson 是二进制的  是无法查看的
+json 文档数据  是可读的  是元数据
+
+恢复到数据库：
+[root@node1 bin]# pwd
+/usr/local/mongodb/bin
+[root@node1 bin]# ./mongorestore --help
+
+--dir 恢复的数据库在哪里
+[root@node1 bin]# ./mongorestore -d local01 --dir /usr/local/backup/local
+
+> show dbs;
+admin    0.078GB
+local    0.078GB
+local01  0.078GB
+#################################################################
+
+如何copy一个数据库：
+复制本地数据库：
+db.copyDatabase("fromdb","todb","localhost");
+复制远程数据库：
+db.copyDatabase("fromdb","todb",10.137.198.152");
+
+
+show dbs;
+admin    0.078GB
+local    0.078GB
+local01  0.078GB
+db.copyDatabase(fromdb,todb,fromhost);
+2017-02-04T10:54:13.460+0800 E QUERY    [thread1] ReferenceError: fromdb is not defined :
+@(shell):1:1
+db.copyDatabase("local","local2","localhost");
+{ "ok" : 1 }
+#################################################################
+如何克隆集合： 远程克隆集合：
+ db.runCommand({"cloneCollection":"local.startup_log","from":"10.137.198.83:27017"})
+{
+        "ok" : 0,
+        "errmsg" : "NamespaceExists: a collection 'local.startup_log' already exists"
+}
+
+
+
+[root@node1 ~]# mongo --port 27018
+
+查看集合内容：
+ db.system.indexes.find()
+{ "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "local.startup_log" }
+#################################################################
+
+mongodb安全管理：
+
+mongodb对注入式攻击是免疫的  
+
+运行在授权的模式下：对用户进行管理  对数据库进行授权管理
+
+限制监听特定ip和端口：对内服务  没必要暴漏在外网
+[root@node1 etc]# vim mongodb1.cnf 
+journal=true
+bind_ip=10.137.198.83
+port=27017
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data
+fork=true
+logpath=/usr/local/mongodb/data/mongodb1.log
+profile=1
+slowms=1
+
+
+[root@node1 etc]# netstat -anlp|grep 27017
+tcp        0      0 0.0.0.0:27017               0.0.0.0:*                   LISTEN      32136/mongod        
+tcp        0      0 127.0.0.1:27017             127.0.0.1:3669              ESTABLISHED 32136/mongod        
+tcp        0      0 127.0.0.1:3669              127.0.0.1:27017             ESTABLISHED 32747/mongo         
+unix  2      [ ACC ]     STREAM     LISTENING     1754406 32136/mongod        /tmp/mongodb-27017.sock
+[root@node1 etc]# cd ..
+[root@node1 mongodb]# ./mongodb_service mongodb1 restart
+2017-02-04T11:13:05.815+0800 I CONTROL  [main] log file "/usr/local/mongodb/data/mongodb1.log" exists; moved to "/usr/local/mongodb/data/mongodb1.log.2017-02-04T03-13-05".
+killing process with pid: 32136
+about to fork child process, waiting until server is ready for connections.
+forked process: 320
+child process started successfully, parent exiting
+[root@node1 mongodb]# netstat -anlp|grep 27017
+tcp        0      0 10.137.198.83:27017         0.0.0.0:*                   LISTEN      320/mongod          
+tcp        1      0 127.0.0.1:3669              127.0.0.1:27017             CLOSE_WAIT  32747/mongo    
+
+连接的时候报错：
+[root@node1 ~]# mongo
+MongoDB shell version v3.4.2
+connecting to: mongodb://127.0.0.1:27017
+
+正确连接方式：
+[root@node1 ~]# mongo --host 10.137.198.83
+
+#################################################################
+用户管理：
+数据库运行在授权的模式下：用户名和密码：
+admin数据库 高级管理相关的所有信息
+创建用户：
+> db.createUser({"user":"root","pwd":"123","roles":["root"]})
+Successfully added user: { "user" : "root", "roles" : [ "root" ] }
+
+> show collections;
+system.indexes
+system.users    创建用户后就会新增集合
+system.version
+> db.system.users.findOne()
+{
+        "_id" : "admin.root",
+        "user" : "root",
+        "db" : "admin",
+        "credentials" : {
+                "SCRAM-SHA-1" : {
+                        "iterationCount" : 10000,
+                        "salt" : "IB7uhehm7QD0szp4Aw95WA==",
+                        "storedKey" : "8+UcJqUtdWGrHn4Y8vr6NtVbJkY=",
+                        "serverKey" : "vy5gEmr1y+wP0WzNmi1VA3pBYKo="
+                }
+        },
+        "roles" : [
+                {
+                        "role" : "root",
+                        "db" : "admin"
+                }
+        ]
+}
+> 
+授权启动：
+启动授权模式：否则授权是无效的，auth=true
+[root@node1 etc]# vim mongodb1.cnf 
+journal=true
+bind_ip=10.137.198.83
+port=27017
+auth=true
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data
+fork=true
+logpath=/usr/local/mongodb/data/mongodb1.log
+profile=1
+slowms=1
+
+
+[root@node1 mongodb]# ./mongodb_service mongodb1 restart
+
+[root@node1 ~]# mongo --host 10.137.198.83
+MongoDB shell version v3.4.2
+connecting to: mongodb://10.137.198.83:27017/
+MongoDB server version: 3.4.2
+> show dbs;  提示没有权限
+[root@localhost mongodb]# mongo --host 10.137.198.90 
+MongoDB shell version v3.4.2
+connecting to: mongodb://10.137.198.90:27017/
+MongoDB server version: 3.4.2
+> show dbs
+2017-02-14T16:09:26.552+0800 E QUERY    [thread1] Error: listDatabases failed:{
+        "ok" : 0,
+        "errmsg" : "not authorized on admin to execute command { listDatabases: 1.0 }",
+        "code" : 13,
+        "codeName" : "Unauthorized"
+} :
+_getErrorWithCode@src/mongo/shell/utils.js:25:13
+Mongo.prototype.getDBs@src/mongo/shell/mongo.js:62:1
+shellHelper.show@src/mongo/shell/utils.js:755:19
+shellHelper@src/mongo/shell/utils.js:645:15
+@(shellhelp2):1:1
+> use admin  > 
+给用户授权一个数据库的权限：有权限访问任何数据库
+switched to db admin
+> db.auth("admin","haier");
+1
+> 1 返回是1 就正确
+> show dbs
+admin   0.078GB
+hilook  0.078GB
+local   0.078GB
+
+
+
+
+
+如何删除用户:
+> db.system.users.find()
+{ "_id" : "admin.root", "user" : "root", "db" : "admin", "credentials" : { "SCRAM-SHA-1" : { "iterationCount" : 10000, "salt" : "IB7uhehm7QD0szp4Aw95WA==", "storedKey" : "8+UcJqUtdWGrHn4Y8vr6NtVbJkY=", "serverKey" : "vy5gEmr1y+wP0WzNmi1VA3pBYKo=" } }, "roles" : [ { "role" : "root", "db" : "admin" } ] }
+> db.dropUser("root")
+true
+
+
+
+
+#################################################################
+roles  root是超级用户  数据库内建的角色 一般只用于数据库管理员
+数据库用户角色：read readWrite    程序使用使用此角色
+数据库管理角色：dbAdmin dbOwner userAdmin
+集群管理角色：clusterAdmin clusterManager clusterMonitor hostManager
+备份恢复角色：backup restore
+所有数据库角色：readAnyDatabase、readWriteAnyDatabase、userAdminAnyDatabase
+超级用户角色：root
+内部角色：__system
+#################################################################
+进程管理：
+查看进程是否正常  kill掉  消耗资源
+查看当前运行的进程：
+进程opid不变化，需要kill掉
+>  db.currentOp()  查看当前正在运行的进程  默认是一直变化的 
+{
+        "inprog" : [
+                {
+                        "desc" : "conn1",
+                        "threadId" : "140385335195392",
+                        "connectionId" : 1,
+                        "client" : "10.137.198.83:7372",
+                        "appName" : "MongoDB Shell",
+                        "active" : true,
+                        "opid" : 854,
+                        "secs_running" : 0,
+                        "microsecs_running" : NumberLong(28),
+                        "op" : "command",
+                        "ns" : "admin.$cmd",
+                        "query" : {
+                                "currentOp" : 1
+                        },
+                        "numYields" : 0,
+                        "locks" : {
+
+                        },
+                        "waitingForLock" : false,
+                        "lockStats" : {
+
+                        }
+                }
+        ],
+        "ok" : 1
+}
+
+> db.killOp(854)   杀掉正在运行的高消耗资源的进程
+{ "info" : "attempting to kill op", "ok" : 1 }
+
+
+
+#################################################################
+mongodb监控基础：
+运行状态是否健康，当前实例的统计信息 单个集合的统计信息 更好的连接 是否运行健康  业务发展调整
+查看数据库统计信息：
+
+mongo --host 10.137.198.83
+
+
+[root@node1 ~]# vim ~/.bash_profile 
+export PATH=$PATH:/usr/local/mongodb/bin
+alias mongo='/usr/local/mongodb/bin/mongo --host 10.137.198.83'
+
+[root@node1 ~]# source ~/.bash_profile 
+
+> db.help()
+
+> db.serverStatus()   查看服务器级别的统计信息，数据库实例状态信息
+运行中是否产生锁，读锁和写锁   集合 数据库 元数据
+网络流量
+操作数的统计  插入 查询 更新 删除  了解业务那种运行为主  
+操作数的统计：复制的操作
+内存信息：mongodb 当做缓存层使用  非常重要
+
+
+
+
+> use local2  
+switched to db local2
+> db.stats()   获取当前单个数据库的统计信息：
+{
+        "db" : "local2",
+        "collections" : 3,
+        "views" : 0,
+        "objects" : 11,
+        "avgObjSize" : 1053.8181818181818,
+        "dataSize" : 11592,
+        "storageSize" : 10498048,
+        "numExtents" : 3,
+        "indexes" : 1,  索引的多少 对io内存有影响
+        "indexSize" : 8176,
+        "fileSize" : 67108864,
+        "nsSizeMB" : 16,   数据文件的大小  业务增长情况 
+        "extentFreeList" : {
+                "num" : 0,
+                "totalSize" : 0
+        },
+        "dataFileVersion" : {
+                "major" : 4,
+                "minor" : 22
+        },
+        "ok" : 1
+}
+
+查看web界面系统监控信息：整个系统监控信息
+[root@node1 etc]# vim mongodb1.cnf 
+
+journal=true
+bind_ip=10.137.198.83
+port=27017
+#auth=true
+httpinterface=true  默认都是false
+rest=true  打开监控页面的时候   部分命令信息  默认都是false
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data
+fork=true
+logpath=/usr/local/mongodb/data/mongodb1.log
+profile=1
+slowms=1
+
+
+[root@node1 etc]# ../mongodb_service mongodb1 restart
+
+[root@node1 etc]# netstat -tnlp| grep mongo
+tcp        0      0 10.137.198.83:27017         0.0.0.0:*                   LISTEN      543/mongod          
+tcp        0      0 0.0.0.0:27018               0.0.0.0:*                   LISTEN      31983/mongod        
+tcp        0      0 10.137.198.83:28017         0.0.0.0:*                   LISTEN      543/mongod   监控页面的
+
+
+http://10.137.198.83:28017/
+
+
+查看集合统计信息：细粒度的统计
+> use local2
+switched to db local2
+> show collections
+startup_log
+system.indexes
+> db.startup_log.stats()
+{
+        "ns" : "local2.startup_log",
+        "size" : 11272,  单位是字节  了解集合增长速度，业务扩展性做出判断
+        "count" : 7,  文档数量
+        "avgObjSize" : 1610,
+        "numExtents" : 1,
+        "storageSize" : 10485760,  
+        "lastExtentSize" : 10485760,
+        "paddingFactor" : 1,
+        "paddingFactorNote" : "paddingFactor is unused and unmaintained in 3.0. It remains hard coded to 1.0 for compatibility only.",
+        "userFlags" : 1,
+        "capped" : true,
+        "max" : NumberLong("9223372036854775807"),
+        "maxSize" : 10485760,
+        "nindexes" : 1,
+        "totalIndexSize" : 8176,
+        "indexSizes" : {
+                "_id_" : 8176
+        },
+        "ok" : 1
+
+直接获取集合大小：
+> db.startup_log.dataSize()
+11272
+
+
+第三方的监控工具：
+nagios监控使用mongodb插件
+其他工具等；
+
+Mongodb数据库监控系统
+
+
+
+#################################################################
+mongodb复制集：
+主服务器down机   故障切换
+复制：将一个数据库示例中的所有数据库改变复制复制到另外一个独立的数据库实例中
+插入 更新 删除  改变表结构的行为都是对数据库的改变 
+
+主动复制集群（old  未来不再使用）和mysql 主动是一样的 ，当前不再使用
+缺点：延长故障时间，导致服务时间收到影响
+一旦主库出现故障，需要手工的把主库切换到最可靠的从库，而其他从库旧的从新的主库去同步
+
+出现故障是自动切换：减少服务时间的影响
+副本集：原理上也是主从复制：
+区别：如果主库出现故障，能够自动主从切换，其他的从库会从新的主库同步数据，整个过程不需要手工干预
+
+副本集就是能主从自动切换的复制
+
+副本集(复制集)应用：
+1、备份  多份备份
+2、故障转移
+3、读扩展
+4、离线数据分析等  不影响线上的数据，支持某个业务的决策和发展
+
+8*
+#################################################################
+
+两个节点的副本集 ：
+主的修复完成之后会以从的角色提供服务，费抢占 
+
+部署三个实例的副本集： 同一台服务器上实现不同的实例 端口不同 
+第一步骤：配置文件
+node1： port=27017 replSet=douxp
+node2： port=27018 replSet=douxp
+node3： port=27019 replSet=douxp
+
+replSet=douxp   名称一定要相同
+
+第二步骤：初始化：使用cfg文件
+
+[root@node1 etc]# ls
+mongodb1.cnf  mongodb2.cnf  mongodb3.cnf
+[root@node1 mongodb]# ./mongodb_service mongodb1 restart
+[root@node1 mongodb]# ./mongodb_service mongodb2 restart
+[root@node1 mongodb]# ./mongodb_service mongodb3 restart
+
+查看复制集的状态：
+> rs.status()
+{
+        "info" : "run rs.initiate(...) if not yet done for the set",
+        "ok" : 0,
+        "errmsg" : "no replset config has been received",
+        "code" : 94,
+        "codeName" : "NotYetInitialized"
+}
+>cfg={"_id":"douxp","members":[{"_id":0,"host":"10.137.198.83:27017"},{"_id":1,"host":"10.137.198.83:27018"},{"_id":2,"host":"10.137.198.83:27019"}]}  定义cfg的配置
+
+> rs.initiate(cfg)
+{
+        "ok" : 0,
+        "errmsg" : "'10.137.198.83:27018' has data already, cannot initiate set.",
+        "code" : 110,
+        "codeName" : "CannotInitializeNodeWithData"
+}
+has data already问题处理：
+> use admin
+switched to db admin
+> db.dropDatabase()
+{ "dropped" : "admin", "ok" : 1 }
+> use local
+switched to db local
+> db.dropDatabase()
+{ "dropped" : "local", "ok" : 1 }
+> show dbs
+> 
+
+
+> rs.initiate(cfg)
+{ "ok" : 1 }
+
+rs.status() 可以查看副本集中成员的状态：哪个salver已经挂了
+
+#################################################################
+
+扩容至四个节点，如何删除节点
+增加第四个节点：
+提供配置文件 replSet=douxp
+[root@node1 mongodb]# vim etc/mongodb4.cnf 
+journal=true
+bind_ip=10.137.198.83
+port=27020
+#auth=true
+httpinterface=true
+rest=true
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data4
+fork=true
+logpath=/usr/local/mongodb/data4/mongodb4.log
+profile=1
+slowms=1
+replSet=douxp
+
+创建目录  mkdir data4
+启动节点  [root@node1 mongodb]# ./mongodb_service mongodb4 start
+
+将节点加入到现在的副本集
+rs.status()  并没有添加进来
+
+添加实例
+rs.add("10.137.198.83:27020")
+如果提示：{ "ok" : 1 } 说明副本集配置成功。
+rs.status() 验证添加的节点 并且状态是secondary
+
+
+资源相对富裕的时候，在线的摘除节点：
+rs.remove("10.137.198.83:27020")
+如果提示：{ "ok" : 1 } 说明副本集配置成功。
+rs.status()  
+
+#################################################################
+主从切换：自动切换   主发生down机了 会自动切换  
+模拟主从切换：
+kill掉主数据库的进程
+[root@node1 etc]# ps aux|grep mongodb3
+root      1004  0.4  1.5 3318020 59364 ?       Sl   12:50   0:05 /usr/local/mongodb/bin/mongod -f /usr/local/mongodb/etc/mongodb3.cnf
+root      1500  0.0  0.0 103252   832 pts/4    S+   13:10   0:00 grep mongodb3
+[root@node1 etc]# kill -9 1004
+
+查看状态rs.status()
+
+   "stateStr" : "PRIMARY",
+   "stateStr" : "SECONDARY",
+
+douxp:PRIMARY> 
+douxp:SECONDARY> 
+
+
+           "health" : 0,   不健康 不可达 
+           "state" : 8,
+           "stateStr" : "(not reachable/healthy)",
+
+
+修复之后仍然以从服务器角色提供服务 ：
+
+
+#################################################################
+手工主从切换：
+1、在线冷冻：
+在主服务器上 rs.freeze(30)  在30秒内不要再选举为主服务器，不要再进行参与选举 
+2、在线降级   必须在主服务器进行
+在主服务器上，在线的的把当前服务器架起   rs.stepDown(60,30)
+3、再验证
+查看状态rs.status()
+
+
+
+#################################################################
+mongodb复制与选举原理：
+配置好后会自动运行：
+
+复制集中，服务器down机  多台从如何选举出主
+复制原理：
+
+创建集合：对数据库发生实质性的改变   find 不会发生改变
+douxp:PRIMARY> use test  创建数据库
+switched to db test
+douxp:PRIMARY> db.createCollection("users")  创建集合
+{ "ok" : 1 }
+douxp:PRIMARY> show collections
+system.indexes
+system.profile
+users
+douxp:PRIMARY> db.users.find()
+douxp:PRIMARY> db.users.insert({"uid":1000})   插入文档
+WriteResult({ "nInserted" : 1 })
+douxp:PRIMARY> db.users.find()
+{ "_id" : ObjectId("589566bc19f56dfe1182c91e"), "uid" : 1000 }
+douxp:PRIMARY> db.users.update({"uid":1000},{"uid":10000})   更新集合 
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+douxp:PRIMARY> db.users.find()
+{ "_id" : ObjectId("589566bc19f56dfe1182c91e"), "uid" : 10000 }
+
+douxp:PRIMARY> db.users.remove({})   清空集合  删除文档
+WriteResult({ "nRemoved" : 1 })
+
+local中的数据是不复制的，保存的是复制相关的字典信息
+douxp:PRIMARY> use local
+switched to db local
+douxp:PRIMARY> show collections
+me
+oplog.rs
+replset.election
+replset.minvalid
+startup_log
+system.indexes
+system.profile
+system.replset
+douxp:PRIMARY> db.oplog.rs.find()
+op  操作类型  
+i 插入
+	ns 对那个集合 
+	o  旧的版本信息  插入的时候就是插入的内容
+u代表更新  
+	o2
+	o最新的版本
+d 代表删除
+	o保存着删除掉的对象id
+oplog.rs  记录操作日志的  用于复制  查询的操作不记录再次  
+改变是数据库复制的根本和本质 ，没有改变就没有复制
+只有改变才会复制，不改变不会复制  使用了操作日志
+
+操作日志：oplog 相当于mysql中的二进制日志，只记录发生改变的记录
+查看复制集日志
+use local
+db.oplog.rs.find()
+
+
+#################################################################
+选举原理：公平的  
+原则：
+节点类型：标准节点、被动节点、仲裁节点  他们都有一票的选举权
+只有标准节点可能被选举为活跃节点，有选举权
+被动节点有完整副本，不可能成为活跃节点，有选举权
+仲裁节点不复制数据，不可能被选举为活跃节点  只有选举权    体现公平性 
+
+
+标准节点和被动节点的区别：默认不设置都是0  是相等的 都是标准节点
+priority值高的就是标准节点，低的就是被动节点  
+
+
+谁胜：
+票数高者胜，priority的优先权0-1000值，相当于额外增加0-1000的票数
+选举结果：票数高者获胜；相同票数者，数据新者获胜
+
+修改配置文件：
+
+
+在主节点上进行操作：
+cfg={"_id":"douxp","members":[{"_id":0,"host":"10.137.198.83:27017","priority":100},{"_id":1,"host":"10.137.198.83:27018","priority":100},{"_id":2,"host":"10.137.198.83:27019","priority":0},{"_id":3,"host":"10.137.198.83:27020","arbiterOnly":true}]}
+
+douxp:PRIMARY> rs.reconfig(cfg)   重新配置
+{ "ok" : 1 }
+douxp:PRIMARY> rs.isMaster()  显示整个架构
+{
+        "hosts" : [   标准节点之间进行切换，可以被选举为活跃节点
+                "10.137.198.83:27017",
+                "10.137.198.83:27018"
+        ],
+        "passives" : [
+                "10.137.198.83:27019"
+        ],
+        "arbiters" : [
+                "10.137.198.83:27020"
+        ],
+        "setName" : "douxp",   副本集名称
+        "setVersion" : 4,
+        "ismaster" : true,  当前服务器是主服器
+        "secondary" : false,
+        "primary" : "10.137.198.83:27018",
+        "me" : "10.137.198.83:27018",
+        "electionId" : ObjectId("7fffffff0000000000000003"),   选举的id
+        "lastWrite" : {
+                "opTime" : {
+                        "ts" : Timestamp(1486187498, 1),
+                        "t" : NumberLong(3)
+                },
+                "lastWriteDate" : ISODate("2017-02-04T05:51:38Z")
+        },
+        "maxBsonObjectSize" : 16777216,
+        "maxMessageSizeBytes" : 48000000,
+        "maxWriteBatchSize" : 1000,
+        "localTime" : ISODate("2017-02-04T05:51:45.410Z"),
+        "maxWireVersion" : 5,
+        "minWireVersion" : 0,
+        "readOnly" : false,
+        "ok" : 1
+}
+douxp:PRIMARY> 
+
+
+标准节点：将27018 down机 看是否会切换
+27017 已经变成主服务器
+
+所有的标准节点都down机，看被动节点是否会接管成为主服务器：即使所有的标准节点都down机了，被动节点也不会成为主节点
+
+被动节点不可能成为活跃节点的，只有标准节点能成为活跃节点；
+
+复制和选举原理：
+
+#################################################################
+如何部署分片服务器：
+高可用架构，需要复制集配合分片服务器完成
+分片服务器：
+
+分片服务器特点：
+什么是分片：为了突破单点数据库服务器的i/o能力限制，对数据库存储进行水平扩展，严格说，每一个服务器或者实例或者副本集就是一个分片
+
+mongodb设计为实现分布式存储，一定意义上就是分片
+集中式存储过于集中，业务发展严重制约可扩展能力
+单台服务器压力越来越大  磁盘成为瓶颈，充分利用磁盘io 内存和cpu资源，分布式存储是最好的方案
+水平扩展
+
+优势：
+针对海量存储 提供类似线性增长的架构，实现在线扩容
+提高数据库高可用性  集中数据分散到10台服务器  一台down  影响的数据是1/10 ，数据库的可用性大大提高，保持高性能
+提高大型数据库查询服务性能  ，并发情况下的 cpu和内存资源
+
+什么时候需要分片：
+单点数据库服务器存储成为瓶颈，数据存储过于集中
+单点数据库服务器的性能成为瓶颈  磁盘io  内存  cpu  制约业务的发展和扩展性 
+大型应用分散数据以充分利用内存 数据分散到各个节点  充分利用内存  
+
+部署分片服务器：至少有三个实例  路由  配置 分片实例  至少4台服务器(使用不同的端口来实现)
+简单配置：
+一台路由实例(端口27017)：客户端、程序连接的是路由实例  路由是唯一和客户端打交道的 把后端的复杂屏蔽掉了 统一对外的接口  接受请求 发送给配置实例
+
+一台配置实例(端口37017)：路由实例连接的是配置实例  知道所有的分片服务器的数据分布情况 
+知道存储情况 去哪里查找数据
+
+分片实例(端口47017,47018)：实际存储数据的分片服务器
+
+
+#################################################################
+
+ mongodb1.cnf 配置服务器
+ mongodb2.cnf  mongodb3.cnf  分片服务器
+ mongodb4.cnf
+
+[root@node1 bin]# ./mongod --help
+
+配置服务器：
+[root@node1 etc]# vim mongodb1.cnf 
+journal=true
+bind_ip=10.137.198.83
+port=37017
+#auth=true
+httpinterface=true
+rest=true
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data
+fork=true
+logpath=/usr/local/mongodb/data/mongodb1.log
+profile=1
+slowms=1
+configsvr=true
+
+分片服务器：
+[root@node1 etc]# vim mongodb2.cnf 
+journal=true
+bind_ip=10.137.198.83
+port=47017
+#auth=true
+httpinterface=true
+rest=true
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data2
+fork=true
+logpath=/usr/local/mongodb/data2/mongodb2.log
+profile=1
+slowms=1
+shardsvr=true
+
+
+[root@node1 etc]# vim mongodb3.cnf 
+journal=true
+bind_ip=10.137.198.83
+port=47018
+#auth=true
+httpinterface=true
+rest=true
+storageEngine=mmapv1
+dbpath=/usr/local/mongodb/data3
+fork=true
+logpath=/usr/local/mongodb/data3/mongodb3.log
+profile=1
+slowms=1
+shardsvr=true
+
+
+先启动配置服务器：
+[root@node1 etc]# ../mongodb_service mongodb1 restart
+再启动分片服务器：
+[root@node1 etc]# ../mongodb_service mongodb2 restart
+[root@node1 etc]# ../mongodb_service mongodb3 restart
+
+在启动路由服务器：连接的是配置服务器 需要告诉路由服务器去哪里找配置服务器
+
+[root@node1 etc]# cd ../bin/
+[root@node1 bin]# ./mongos --help
+
+[root@node1 bin]# ./mongos --port 27017 --fork --logpath=/usr/local/mongodb/data4/route.log --configdb 10.137.198.83:37017 --chunkSize 1
+
+--chunkSize 1 块大小 到大多少的时候进行分片 每个分片到大多少后进行分片
+chunkSize = 1  #单位 mb 生成环境请使用 200 或删除 
+
+
+告诉路由实例添加分片进来：
+ sh.status() 查看分片的信息  分片版本信息 当前分片有哪些  
+
+添加分片服务器：
+sh.addShard("10.137.198.83:47017")
+ sh.status()  shards 出现分片 databases 出现数据库
+已经有数据库就不能添加上，当前数据库中已经存在分片中，新添加的分片存在相同的数据，必须删除再添加
+sh.addShard("10.137.198.83:47018")
+
+分片分散的存储在连个服务器中，
+分片是根据数据库中的集合的某个字段进行的 
+打开数据库进行分片  
+partitioned  打开数据库的分片 允许分片
+打开数据库hxf的分片：
+sh.enableSharding("hxf")
+
+数据库允许分片，集合不一定就进行了分片 对那个集合，那个字段进行分片
+use hxf
+show collections
+db.users.find().limit(10)
+分片需要索引，查看是否有索引
+db.users.getIndexes()  uid字段有unique的索引
+对users集合根据uid进行分片：
+sh.shardCollection("hxf.users",{"uid":1})
+sh.status()查看分片情况  shard key
+chunks
+第一个分片有9个块 
+第二个分片有2个块
+最终均匀的分散到连个节点中
+
+
+#################################################################
+
+部署分片步骤：
+1、分片服务器：
+配置选项 port=47017 shadsvr=true
+另一分片配置 port=47018 shadsvr=true 
+
+2、 配置服务器
+配置选项 port=37017 configsvr=true
+3 、路由进程启动 以上两个启动才可以启动 去哪里寻找配置服务器
+./mongos --port 27017 --fork --logpath=/usr/local/mongodb/data4/route.log --configdb 10.137.198.83:37017 --chunkSize 1
+
+4、登陆路由服务器配置sharding
+sh.addShard("10.137.198.83:47017")
+sh.addShard("10.137.198.83:47018")
+
+5、分片
+需要打开数据允许进行分片 
+sh.enableSharding("hxf")
+打开集合是否分片  hxf.users完整的集合名   分片的依据
+sh.shardCollection("hxf.users",{"uid":true})
+
+
+
+
+#################################################################
+生产实际如何实现分片：
+高可用：多台路由实例组成  三台以上 
+配置实例也是有多台实现  三台以上 
+每个分片都是副本集：主从的自动切换  主服务器down机 找新的主服务器  每个分片至少2台以上的分片服务器 ，每个分片服务器至少两台以上的副本集
+
+
+什么是分片
+什么时候需要分片
+如何实现分片
+生产配置：高可用数据库集群，数据库的高可用部署
+
+分片集合中的某个字段进行分片存储，字段叫片键，片键以及如何选择，以及管理维护
+
+
+
+
+#################################################################
+片键的选择和分片管理 ：决定查询的性能：分片服务器在线上运行之后的管理和维护
+片键 选择的原则：
+分布式环境的存储 目标之一  充分利用各个服务器io 内存 均匀分散io性能
+
+均匀存储数据的字段
+原则：结合业务需要，尽可能选择存储分片均匀的键
+登陆 mongo  进去后是mongos>
+
+sh.status() 查看分片的状态信息  
+
+
+use hxf
+show collections
+三个集合
+db.users.count()
+db.users2.count()
+db.users3.count()
+db.users3.find().limit(5)
+字段特点：
+uid 自动增长0---20000  步长为1
+salary 薪水是随机值
+sex  1 2 
+
+######################
+
+分片的键必须要建立索引，按照uid  自动增长 ，顺序，不够理想
+uid顺序增长，并且分片也是顺序的，插入的时候总是在一个分片上插入，导致热点总是在一个节点上执行，理念是要尽可能分散存储
+db.users.createIndex({"uid":1})
+
+打开集合users的分片：
+sh.shardCollection("hxf.users",{"uid":1})
+
+sh.status() 查看分片的状态信息
+shard key: {"uid" : 1}  
+balancing:true  数据均匀分布
+chunks：
+	shard0000   3
+	shard0001   2
+
+######################
+
+分片的键必须要建立索引，按照sex  值是有限的  1 和2  mongodb有多少个值 做多就有多少个分片服务器，严重制约了业务扩展能力 不够理想
+
+db.users2.createIndex({"sex":1})
+
+打开集合users2的分片：按照性别
+sh.shardCollection("hxf.users2",{"sex":1})
+
+
+balancing:true  数据均匀分布
+chunks：
+	shard0000   2
+	shard0001   1
+######################
+
+分片的键必须要建立索引，按照salary  随机值， 存储上是随机的 分片时 插入和更新的时候  都是随机的落在不同的分片上  优点是随机的字段值把热点数据分散到各个分片上  提高io能力
+db.users3.createIndex({"salary":1})
+
+打开集合users2的分片：按照薪水 是随机的
+sh.shardCollection("hxf.users3",{"salary":1})
+
+balancing:true  数据均匀分布
+chunks：
+	shard0000   3
+	shard0001   2
+
+总结：
+1、字段值有限：理论上分片有限   缺点会制约业务扩展能力
+2、时间戳或者自动增长id：
+	数据大多都逻辑连续的和顺序的插入到一个分片上
+	优点:无限数量的字段值，提供无限数量的分片，业务扩展不需要担心
+	缺点  单一且不可分散热点
+
+3、随机的片键：
+优点：分散热点，分散io
+缺点：数据越大，性能越差 
+4、综合  理想的片键：
+结合业务特点，组合的搜索条件就是片键  自动增长id+随机片键组合在一起
+结果：高效
+
+#################################################################
+管理和维护shard：
+
+如何查看分片服务器状态信息
+添加和删除分片
+查看当前实例是否是sharding
+如何移动特定的数据
+给分片添加、删除标签(结合业务特点)
+config服务器的集合有哪些
+
+
+当前有多个集合 ,查看集合是否已经分片：db.users.stats()   有分片说明已经做了分片
+count 文档多少 
+
+sh.status()  查看分片服务器的信息
+shards:  
+	{_id":"shard0000","host":"10.137.198.83:47017"}
+	{_id":"shard0001","host":"10.137.198.83:47018"}
+给分片服务器标签 有意义的业务名称
+添加分片服务器的标签：
+sh.addShardTag("shard0000","pay00")
+sh.addShardTag("shard0001","pay01")
+sh.status()
+
+shards:  
+	{_id":"shard0000","host":"10.137.198.83:47017","tags":["pay00"]}
+	{_id":"shard0001","host":"10.137.198.83:47018","tags":["pay01"]}
+删除掉标签：
+sh.removeShardTag("shard0000","pay01")
+
+
+对分片服务器的管理命令帮助：
+sh.help()
+添加分片服务器
+对数据库启用分片
+打开数据的分片之后，仍需要对集合进行分片 
+
+集合分布的情况不均匀的时候 sh.splitFind()  有均衡器在起作用  移动块到不同的服务器
+"uid":5000  根据查询结果进行分开：
+ sh.splitFind("hxf.users",{"uid":5000})
+
+sh.getBalancerState()只有才需要的时候才运行 添加分片的时候 默认是开启的  对数据进行均匀的分布
+
+数据不均匀的时候进行手工移动，均衡器只要在运行，需要移动块的时候很少；
+
+
+配置服务器的集合有哪些： 用来存放元数据
+shard存放数据
+app 查询数据  ---到元数据服务器  读分散不是好事   索引是在本地创建的    最后给我重新排序 
+写操作： 修改用户年龄  分散到不同的shard 上  尽可能实现
+设计shard： 写是尽可能离散的  读尽可能不离散的  选择合理的分区键  查询按照分区键
+
+
+
+
+
+configsvr>show dbs
+admin
+config  配置信息
+local
+use config 
+show collections
+db.chunks.find()
+db.chunks.findOne()  后端数据库存储的所有分布情况：最大值和最小值保存在那个分片中 
+collections：所有启动分片的所有集合
+db.collections.find()
+
+分片服务器中有哪些数据库  
+db.databases.find()
+db.mongos.find()
+db.setting.find()  分片的大小信息  chunksize 
+db.shards.find()   查看分片情况  
+
+
+如何对现有表进行sharding：
+sh.enableSharding("hxf")  先启用数据库分片
+sh.shardCollection("hxf.users",{"age":1})  对集合启用分片  分片的依据 字段
+
+
+添加或者删除sharding server
+
+添加分片服务器： 在路由服务器中操作
+sh.help()
+sh.addShard("10.137.198.83:47019")
+添加一台新的后，保证要不能有数据库，添加完成后会进行均衡，均衡到3个分片中 每个分片都有2个chunk
+删除数据库  
+use hxf
+db.dropDatabase()
+
+删除分片服务器：迁移到其他的两个分片中
+
+db.runCommand({"removeshard":"10.137.198.83:47019"})
+如果要删除分片，必须切换到admin中
+use admin
+db.runCommand({"removeshard":"10.137.198.83:47019"})
+查看状态：
+sh.status()  正在清理数据 
+在执行一次命令
+db.runCommand({"removeshard":"10.137.198.83:47019"})
+
+
+
+
+
+1、片键的选择：
+2、分片服务器的管理与维护
+	如何对现有表进行分片
+	如何增、删除分片节点
+
+
+348019870
+#################################################################
+
+mongodb数据类型：
+文档 集合 数据库的命名 
+mongodb的数据类型：
+bson 是binary json，是二进制的格式，能将mogodb的所有文档表示为字节的字符串
+json 是一种轻量级的数据交换格式，它基于js的一个子集
+bson的数据类型：
+
+查看当前集合所在的数据库
+> db.help()
+
+> db.users.getDB()
+local
+
+建立数据库 use michael  本身不存在但是能打开 
+> use michael
+switched to db michael
+> 
+> show dbs
+admin  0.078GB
+local  1.078GB
+> db.users.insert({"uid":1})
+WriteResult({ "nInserted" : 1 })
+> show collections
+system.indexes
+system.profile
+users
+
+往集合中插入文档 会创建一个集合 一个数据库，数值类型不用加引号
+> db.users.insert({"uid":1})
+
+> show dbs
+admin    0.078GB
+local    1.078GB
+michael  0.078GB
+查看文档
+> db.users.find()
+{ "_id" : ObjectId("5895906b4e579774f93ca7bb"), "uid" : 1 }
+{ "_id" : ObjectId("589594394e579774f93ca7bc"), "uid" : 2, "uname" : "douxuepeng", "isvip" : true, "sex" : null, "favorite" : [ "apple", "banana", 1, 2, 3 ], "regtime" : ISODate("2017-02-04T08:43:37.441Z") }
+
+> db.users.findOne()
+查找条件
+> db.users.findOne({"uid":2})
+保存到变量
+> a = db.users.findOne({"uid":2})
+
+查看数据类型：
+> typeof(a.uid)
+number
+
+
+> db.users.insert({"uid":3,"salary":123123222222222222222222222222222222222222222222222222,"a":1.222222222222222222222222222222222222222})
+WriteResult({ "nInserted" : 1 })
+> db.users.findOne({"uid":3})
+{
+        "_id" : ObjectId("589595254e579774f93ca7bd"),
+        "uid" : 3,
+        "salary" : 1.2312322222222222e+53,
+        "a" : 1.2222222222222223
+}
+> b = db.users.findOne({"uid":3})
+{
+        "_id" : ObjectId("589595254e579774f93ca7bd"),
+        "uid" : 3,
+        "salary" : 1.2312322222222222e+53,
+        "a" : 1.2222222222222223
+}
+> typeof(b.uid)
+number
+> typeof(b.salary)
+number
+> typeof(b.a)
+number
+> 
+
+mysql中 普通整数  以及短整型  长整型  浮点数
+字符串 定长和边长  对长度需要实现定义
+
+mongodb 都是64位的浮点数  number  不区分长整形，短整型  浮点型 单精度型  都是一种类型 number  简单简洁  
+字符串：可以保存一部小说  没有限制
+
+
+null 含义：第一代表的是值为null  第二代表字段不存在
+
+db.users.find({"sex":null})  会查找出所有的
+
+db.users.find({"sex":null,"sex":{"$exists":true}})
+
+数组是值的列表：可以是任意类型
+
+mongodb中没有日期类型：日期类型通过对象类型产生的  mongodb处理日期非常麻烦
+
+
+bson的6中数据类型：
+null 只有null值，代表空或者不存在
+布尔类型只有true 和 false
+数字 64位浮点数
+字符串：utf8字符串
+数组：值或者列表可表示为数组
+对象：对象的数据
+
+bson特点：
+优点：简单简洁 容易理解 解析 记忆
+确定：表现力可能受限，(比如日期类型)
+
+命名规则：
+1、不允许相同名的键存在   相同键名存在，后边覆盖前面的
+> db.users2.insert({"uid":1,"uid":2})
+WriteResult({ "nInserted" : 1 })
+> db.users2.find()
+{ "_id" : ObjectId("589598cd4e579774f93ca7bf"), "uid" : 2 }
+2、键名区分大小写：
+> db.users2.insert({"uid":1,"Uid":2})
+WriteResult({ "nInserted" : 1 })
+> db.users2.find()
+{ "_id" : ObjectId("589598cd4e579774f93ca7bf"), "uid" : 2 }
+{ "_id" : ObjectId("589599034e579774f93ca7c0"), "uid" : 1, "Uid" : 2 }
+
+3、文档是讲究顺序的
+> db.users2.insert({"Uid":2,"uid":1})
+WriteResult({ "nInserted" : 1 })
+> db.users2.find()
+{ "_id" : ObjectId("589598cd4e579774f93ca7bf"), "uid" : 2 }
+{ "_id" : ObjectId("589599034e579774f93ca7c0"), "uid" : 1, "Uid" : 2 }
+{ "_id" : ObjectId("5895994c4e579774f93ca7c1"), "Uid" : 2, "uid" : 1 }
+
+
+命名可以是任意的utf8字符：
+
+文档的命名规则：
+1、$开头
+2、\0 (空字符)
+3、_ 下划线开头
+
+字段的命名不能以$开头，但是允许在中间出现 $是mongodb保留的
+空的字段也是允许的 但是没有意义
+
+> db.users2.insert({"\0":2,"uid":1})
+每个文档后边都是以空结束的 \0（空字符）
+插入的每个文档前面都有一个_id，是下划线开头 是文档的唯一标识
+自己命名的不要使用_开头
+
+
+系统的集合：集合的命名不能使用system开头
+system.indexes
+system.profile
+
+文档的插入 空集合也是没意义的
+集合的命名几乎所有的utf8字符，只有少数例外：
+1、$开头
+2、\0 (空字符)
+3、system.开头
+4、""空字符串
+
+
+数据库命名规则：
+数据库的命名 要全是小写 少数例外：
+""空字符串  \0 (空字符) 空格 \ / .
+
+操作过程中 创建文档 集合 数据库 
+
+#################################################################
+
+文档的创建、更新 、删除
+
+文档是键值对  必须成对的出现  文档使用{}  
+
+db.users.insert({"uid":1,"uname":"douxp","salary":1})
+
+插入文档 使用 insert
+
+快速的构造1万条文档：
+循环的json实现：
+WriteResult({ "nInserted" : 1 })  插入成功
+
+工资在2000到5000
+> for (i=2;i<=1000;i++){db.users.insert({"uid":i,"uname":"douxuepeng"+i,"salary":2000+Math.round(Math.random()*5000)});}
+
+
+查找文档：> db.users.find()  查找所有的文档  find()返回所有的文档
+db.users.find({"uid":100})  查找uid为100的文档
+
+
+
+删除文档：uid为100的文档删除
+> db.users.remove({"uid":100})
+WriteResult({ "nRemoved" : 2 })
+> db.users.find({"uid":100})
+> 
+
+
+删除集合所有文档：清空整个集合
+> db.users.remove({})  需要传入空的文档{}
+WriteResult({ "nRemoved" : 2001 })
+文档被清空  集合并没有被删除
+
+删除集合：
+> db.users.drop()
+true
+
+
+
+更新文档：更新的内容会把整个文档覆盖掉
+需要有两个参数  对那个文档进行更新   更新的文档  
+> for (i=2;i<=1000;i++){db.users.insert({"uid":i,"uname":"douxuepeng"+i,"salary":2000+Math.round(Math.random()*5000)});}
+
+> db.users.find({"uid":100})
+{ "_id" : ObjectId("58959f214e579774f93cb3dd"), "uid" : 100, "uname" : "douxuepeng100", "salary" : 4878 }
+
+
+> db.users.find({"uid":100})
+{ "_id" : ObjectId("58959f214e579774f93cb3dd"), "uid" : 100, "uname" : "douxuepeng100", "salary" : 4878 }
+> db.users.update({"uid":100},{"uname":"nanhailu"})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })  找出来 
+> db.users.find({"uid":100})  会查找不到
+
+> db.users.find({"uname":"nanhailu"})
+{ "_id" : ObjectId("58959f214e579774f93cb3dd"), "uname" : "nanhailu" } 更新的时候 更新的内容会把整个文档覆盖掉  
+
+
+
+文档的替换更新方式：uid salary 不需要变更 但仍写出来 
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uid" : 200, "uname" : "douxuepeng200", "salary" : 6462 }
+> db.users.update({"uid":200},{"uname":"nanhailu","salary" : 6462,"uid" : 200})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "nanhailu", "salary" : 6462, "uid" : 200 }
+
+
+
+
+变量替换的方式：
+> a = db.users.findOne({"uid":200})
+{
+        "_id" : ObjectId("58959f214e579774f93cb441"),
+        "uname" : "nanhailu",
+        "salary" : 6462,
+        "uid" : 200
+
+
+> a.uid
+200
+> a.uname
+nanhailu
+> a.salary
+6462
+> 
+> a.uname="haier"
+haier
+
+> db.users.update({"uid":200},a)
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "haier", "salary" : 6462, "uid" : 200 }
+#################################################################
+使用修改器$inc更新：
+
+
+给用户增加1000块钱：
+
+ 
+修改器：$inc  相当于键 {"$inc":{"salary":1000}}
+
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "haier", "salary" : 6462, "uid" : 200 }
+
+> db.users.update({"uid":200},{"$inc":{"salary":1000}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "haier", "salary" : 7462, "uid" : 200 }
+> 
+
+
+给用户减少1000块钱：
+
+> db.users.update({"uid":200},{"$inc":{"salary":-2000}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "haier", "salary" : 5462, "uid" : 200 }
+
+
+#################################################################
+如何增加或者删除字段：
+
+需求变化 ：只给第10个文档添加一个字段 $set
+
+> db.users.update({"uid":200},{"$set":{"age":28}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "haier", "salary" : 5462, "uid" : 200, "age" : 28 }
+
+删除字段：$unset  "age":1  1代表true 要删除
+> db.users.update({"uid":200},{"$unset":{"age":1}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "haier", "salary" : 5462, "uid" : 200 }
+> 
+删除薪水字段："salary":true  《 === 》 "age":1
+> db.users.update({"uid":200},{"$unset":{"salary":true}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.users.find({"uid":200})
+{ "_id" : ObjectId("58959f214e579774f93cb441"), "uname" : "haier", "uid" : 200 }
+
+#################################################################
+更新文档的其他参数：
+db.users.update({arg1},{arg2}，arg3,arg4)
+参数1：条件
+参数2：需要操作的更新内容
+参数3：如果文档不存在是否启用插入 true/false
+参数4：是否更新全部匹配的文档(默认更新第一条) true/false
+
+
+参数3：集合中没有时直接插入
+
+集合中找不到这条文档.默认是false，查找不到的时候是不允许插入的
+> db.users.find({"uid":30000})
+
+> db.users.update({"uid":30000},{"uid":100,"uname":"aa","salary":10000})
+WriteResult({ "nMatched" : 0, "nUpserted" : 0, "nModified" : 0 })
+
+启用插入 
+> db.users.update({"uid":30000},{"uid":30000,"uname":"aa","salary":10000},true)
+WriteResult({
+        "nMatched" : 0,
+        "nUpserted" : 1,
+        "nModified" : 0,
+        "_id" : ObjectId("5895a6a324415ca3c11fe4f8")
+})
+> db.users.find({"uid":30000})
+{ "_id" : ObjectId("5895a6a324415ca3c11fe4f8"), "uid" : 30000, "uname" : "aa", "salary" : 10000 }
+
+
+参数4：默认只更新第一个文档 
+给所有的员工添加1万： 默认是7000一下的
+> db.users.update({},{"$inc":{"salary":10000}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })  更新的是所有的文档，但是只匹配了一条 修改了一条 ，默认更新的是第一个文档
+
+第四个参数：设置为true时，更新匹配的所有文档，默认是false
+> db.users.update({},{"$inc":{"salary":10000}},false,true)
+WriteResult({ "nMatched" : 1002, "nUpserted" : 0, "nModified" : 1002 })
+
+
+#################################################################
+#################################################################
+#################################################################
+
+
+
+
+
+
+
+#################################################################
+副本集特征：
+1、N 个节点的集群
+2、何节点可作为主节点
+3、所有写入操作都在主节点上
+4、自动故障转移
+5、自动恢复
+
+副本集的作用：
+1、用多台机器进行同一数据的异步同步，从而使多台机器拥有同一数据的多个副本
+2、当主库（primary）宕机时在不需要用户干预，自动切换其他从库（secondary）做主库
+3、利用副本服务器做只读服务器，实现读写分离，提高负载。
+#################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+===============
+
+# 安装
+
+
+# 基本命令
+> show dbs <==> show databases
+admin  0.000GB
+local  0.000GB
+
+> use local
+switched to db local
+
+> show tables  <==> show collections;
+startup_log
+
+> db.system.version.find().limit(1)
+{ "_id" : "featureCompatibilityVersion", "version" : "3.4" } # 是文档，一条完整的记录
+
+一条或者多条文档组成表(集合)，一个或多个集合组成数据库(),一个或者多个数据库组成一个实例
+
+
+# 目录结构
+.
+├── collection-0-2959076777984484799.wt
+├── collection-2-2959076777984484799.wt
+├── diagnostic.data
+│   ├── metrics.2017-10-12T06-37-17Z-00000
+│   └── metrics.interim
+├── index-1-2959076777984484799.wt
+├── index-3-2959076777984484799.wt
+├── index-4-2959076777984484799.wt
+├── journal  # 重做日志文件
+│   ├── WiredTigerLog.0000000001
+│   ├── WiredTigerPreplog.0000000001
+│   └── WiredTigerPreplog.0000000002
+├── _mdb_catalog.wt
+├── mongod.lock
+├── sizeStorer.wt
+├── storage.bson
+├── WiredTiger
+├── WiredTigerLAS.wt
+├── WiredTiger.lock
+├── WiredTiger.turtle
+└── WiredTiger.wt
+
+2 directories, 19 files
+
+
+
+# 数据类型
+> db.stats()
+
+> db.system.profile.help() 查看集合下所有的方法
+
+数据类型
+> db.u.insert(
+	{'uid':1, 
+	'username':'zhourudong', 
+	'isvip':true, 
+	'sex':null,
+	'favorite':['apple', 'banana', 1,2,3], 
+	'regtime':new Date()}
+	)
+
+
+查找
+> db.u.findOne({"uid":1})
+{
+	"_id" : ObjectId("59df1ae6af177562d3f2fff7"),
+	"uid" : 1,
+	"username" : "zhourudong",
+	"isvip" : true,
+	"sex" : null,
+	"favorite" : [
+		"apple",
+		"banana",
+		1,
+		2,
+		3
+	],
+	"regtime" : ISODate("2017-10-12T07:33:58.310Z")
+}
+保存到变量中
+mongo中只有number类型，没有浮点双精度，
+a = db.u.findOne({"uid":1})
+> typeof(a.uid)
+number
+
+
+
+# CURD操作
+
+C
+> for (i=2; i<=30;i++){
+... db.users.insert({'uid':i, 'uname':'zhourd'+i, 'salary':2000 + Math.round(Math.random()*5000)});
+... }
+WriteResult({ "nInserted" : 1 })
+
+D
+> db.users.remove({'uid':1}) # 不加条件删除所有文档， 但是不会删除集合
+
+删除集合(表)
+db.users.drop()
+
+U
+> db.users.update({'uid':2}, {'uname':'fixusername'}) # 覆盖式更新
+> db.users.find()
+{ "_id" : ObjectId("59df2427af177562d3f2fff9"), "uname" : "fixusername" }
+
+> db.users.update({'uid':3}, {'uname':'fixusername', "uid" : 3, "salary" : 6669}) # 麻烦
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+
+> a = db.users.findOne({'uid':3})
+{
+	"_id" : ObjectId("59df2427af177562d3f2fffa"),
+	"uname" : "fixusername",
+	"uid" : 3,
+	"salary" : 6669
+}
+> a.uname='zrd1'
+
+> db.users.update({'uid':3}, a) # 部分更新，变量替换方式
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+
+
+增加/删除字段 $set/$unset
+
+
+R
+正则
+> db.users.find({'uname':/^z/i} ) # 匹配开头忽略大小写
+
+
+
+where条件
+
+
+sort排序
+skip
+
+
+# 索引
+
+单键索引
+> db.users.ensureIndex({'uid':1})
+{
+	"createdCollectionAutomatically" : false,
+	"numIndexesBefore" : 1,
+	"numIndexesAfter" : 2,
+	"ok" : 1
+}
+
+db.users.getIndexes()
+
+联合索引
+> db.users.ensureIndex({'uid':1, 'uname':1})
+
+索引命名
+db.users.ensureIndex({'uid':1, 'uname':1}, {'name': 'uiduname'})
+
+
+
+
+固定的集合, 超过固定的大小会删除旧的文档
+db.createCollection(name, { size : ..., capped : ..., max : ... } )
+
+大小为10k,固定的集合,最大的文档数量为10条
+db.createCollection('mylog', { size : 10,  capped : true,  max : 10 } )
+
+另一种创建方法
+db.mylog1.insert({'uid':1})
+> db.runCommand({'convertToCapped': "mylog1", "size":10})
+
+for(i=0;i<10;i++){ db.mylog.insert({'uid':i}) }
+
+
+
+
+
+
+
+=============================
+use sched;
+
+
+use admin
+db.createUser(
+  {
+    user: "admin",
+    pwd: "sanhao123",
+    roles: [ { role: "root", db: "sched" } ]
+  }
+)
+
+
+
+
+
+# 创建全局管理员
+use admin
+db.createUser(
+  {
+    user: "root",
+    pwd: "abc123",
+    roles: [ { role: "root", db: "admin" } ]
+  }
+)
+
+
+
+# 库级别权限
+use sched
+
+db.createUser(
+  {
+    user: "adminsched",
+    pwd: "sanhao123",
+    roles: [ { role: "dbOwner", db: "sched" } ]
+  }
+)
+
+
+#############
+复制集体
+
+概念；
+容灾 选举 安全 权限控制
+
+数据节点: 存储数据， 主或者从
+投票节点: 投票, 不充当主从
+
+oplog:
+
+
+数据一致性保证：
+集群只有一个主节点（没有双主）
+大多数原则 	1.集群存活节点小于等于二分之一时，2.只能读不能写入
+（三节点，主节点心跳检查到其他两个节点宕机，主节点会自动降级为从节点）	
+
+------------------
+rs.initiate( {
+   _id : "sanhao",
+   members: [ { _id : 0, host : "192.168.1.52:27017" } ]
+})
+rs.add("192.168.1.52:27018")
+rs.add("192.168.1.52:27019")
+
+# 开启认证后,只能127.0.0.1免密码验证登录，防止auth选项而没有添加用户（只对于没有任何用户的时候生效,且创建的第一个用户是管理员用户!）
+setParameter=enableLocalhostAuthBypass=1  # https://docs.mongodb.com/manual/reference/parameters/#param.enableLocalhostAuthBypass 
+
+# 角色
+# 权限
+内建权限
+查看用户的权限
+db.runCommand({usersInfo:'root', showPrivileges:1})
+
