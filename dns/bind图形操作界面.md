@@ -10,3 +10,27 @@ gui dns
 
 
 ```
+
+
+```
+http://blog.maryopen.com/index.php/2015/06/bind9namedmanager/
+
+
+http://skypegnu1.blog.51cto.com/8991766/1751511
+
+
+http://blog.csdn.net/signmem/article/details/18882259
+
+
+
+https://en.wikipedia.org/wiki/DNS_management_software
+
+DNS management software
+
+
+https://github.com/WillyXJ/facileManager
+
+
+http://community.nethserver.org/t/bind9-facilemanager-webui/897
+
+```
