@@ -82,7 +82,3 @@ mv /mysqllog/slow_log/slow_queries_3306.log /mysqlbackup/slow_log/slow_queries_3
 
 
 
-
-
-
-
