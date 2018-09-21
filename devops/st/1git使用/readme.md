@@ -292,3 +292,11 @@ git branch  -d xxx `删除分支`
 `git  rebase origin/dev`    # 不会产生新分叉记录 和 merge不一样
 
 git  rebase  # 保持提交记录的整洁
+
+
+
+# 解决冲突
+
+ - 所有相关开发人员都在
+ - 合并时间尽量缩短(每个功能模块进行合并)
+ - review
