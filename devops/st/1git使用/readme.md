@@ -235,3 +235,32 @@ git log 		# 找到要修改提交的前一个提交号
 git rebase -i 	<提交号>
 git push --force
 ```
+
+
+
+# 暂时存储已开发的代码,中途最其他的事情 (另一个方案 使用分支)
+
+```
+git  stash -h
+usage: git stash list [<options>]
+   or: git stash show [<stash>]
+   or: git stash drop [-q|--quiet] [<stash>]
+   or: git stash ( pop | apply ) [--index] [-q|--quiet] [<stash>]
+   or: git stash branch <branchname> [<stash>]
+   or: git stash [save [--patch] [-k|--[no-]keep-index] [-q|--quiet]
+		       [-u|--include-untracked] [-a|--all] [<message>]]
+   or: git stash clear
+
+  
+  
+```
+   
+   
+
+   
+git stash 
+		`当前文件临时存放到????, 可以取回来,可以帮忙合并(自动操作)`
+		`只存红色的文件,被修改的文件没有进行add`
+	
+git stash pop 			取回最后保存的一条
+git stash apply xxxx    按编号取回
