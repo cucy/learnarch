@@ -275,3 +275,9 @@ git branch -h
 git  merge xxx  `将xxx分支合并到当期所在分支 (先git checkout到需要合并的分支)`
 
 git branch  -d xxx `删除分支`
+
+
+
+# 把代码拉取到暂存区 (两步操作 等价于 git pull)
+git fetch  dev 
+git  merge origin/dev 
