@@ -281,3 +281,11 @@ git branch  -d xxx `删除分支`
 # 把代码拉取到暂存区 (两步操作 等价于 git pull)
 git fetch  dev 
 git  merge origin/dev 
+
+
+# rebase
+
+git  rebase origin/dev    # 不会产生新分叉记录 和 merge不一样
+
+
+git  rebase  # 保持提交记录的整洁
