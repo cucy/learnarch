@@ -264,3 +264,14 @@ git stash
 	
 git stash pop 			取回最后保存的一条
 git stash apply xxxx    按编号取回
+
+
+
+# 合并
+
+
+git branch -h 
+
+git  merge xxx  `将xxx分支合并到当期所在分支 (先git checkout到需要合并的分支)`
+
+git branch  -d xxx `删除分支`
