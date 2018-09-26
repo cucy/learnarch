@@ -19,7 +19,7 @@ do
 	OLDIFS="$IFS"
 	for f in    ${FILE_LIST}
 	do
-		echo "${i}/${f} 222222222222"
+		echo "${i}/${f} "
 		# 包含后缀的文件名
 		fullname=${f}
 		# 文件名没有后缀
